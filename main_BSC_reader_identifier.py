@@ -1,14 +1,12 @@
 import numpy as np
 import pandas as pd
 import os
-from utils import *
 from sklearn.model_selection import StratifiedKFold, KFold
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import Adam, RMSprop
 from transformers import BertTokenizer
-from model import Eyettention_readerID
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from torch.nn.functional import cross_entropy, softmax
 from collections import deque
@@ -16,6 +14,9 @@ import pickle
 import json
 import matplotlib.pyplot as plt
 import argparse
+
+from Eyettention.utils import *
+from Eyettention.model import Eyettention_readerID
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='run uniform baseline')
