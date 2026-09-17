@@ -58,6 +58,7 @@ if __name__ == '__main__':
 	)
 	args = parser.parse_args()
 	gpu = args.gpu
+	os.makedirs(args.save_data_folder, exist_ok=True)
 
 	torch.set_default_tensor_type('torch.FloatTensor')
 	availbl = torch.cuda.is_available()
@@ -66,26 +67,16 @@ if __name__ == '__main__':
 		device = f'cuda:{gpu}'
 	else:
 		device = 'cpu'
-	torch.cuda.set_device(gpu)
+	if availbl:
+		torch.cuda.set_device(gpu)
 
-	cf = {"model_pretrained": "bert-base-chinese",
-			"lr": 1e-3,
-			"max_grad_norm": 10,
-			"n_epochs": 1000,
-			"n_folds": 5,
-			"dataset": 'BSC',
-			"atten_type": args.atten_type,
-			"batch_size": 256,
-			"max_sn_len": 27, #include start token and end token
-			"max_sp_len": 40, #include start token and end token
-			"norm_type": "z-score",
-			"earlystop_patience": 20,
-			"max_pred_len":args.max_pred_len
-			}
+	cf = build_bsc_config(
+		atten_type=args.atten_type,
+		max_pred_len=args.max_pred_len,
+	)
 
 	#Encode the label into interger categories, setting the exclusive category 'cf["max_sn_len"]-1' as the end sign
-	le = LabelEncoder()
-	le.fit(np.append(np.arange(-cf["max_sn_len"]+3, cf["max_sn_len"]-1), cf["max_sn_len"]-1))
+	le = build_label_encoder(cf)
 	#le.classes_
 
 	#load corpus

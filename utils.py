@@ -14,6 +14,56 @@ from tqdm import tqdm
 import json
 from collections import Counter
 import torch.nn as nn
+from sklearn.preprocessing import LabelEncoder
+
+def build_bsc_config(
+	atten_type="local-g",
+	max_pred_len=60,
+	batch_size=256,
+	n_epochs=1000,
+	n_folds=5,
+):
+	return {
+		"model_pretrained": "bert-base-chinese",
+		"lr": 1e-3,
+		"max_grad_norm": 10,
+		"n_epochs": n_epochs,
+		"n_folds": n_folds,
+		"dataset": "BSC",
+		"atten_type": atten_type,
+		"batch_size": batch_size,
+		"max_sn_len": 27,
+		"max_sp_len": 40,
+		"norm_type": "z-score",
+		"earlystop_patience": 20,
+		"max_pred_len": max_pred_len,
+	}
+
+def build_label_encoder(cf):
+	le = LabelEncoder()
+	le.fit(np.append(np.arange(-cf["max_sn_len"] + 3, cf["max_sn_len"] - 1), cf["max_sn_len"] - 1))
+	return le
+
+def text_to_bsc_inputs(sn_str, tokenizer, cf, device="cpu"):
+	tokens = tokenizer.encode_plus(
+		sn_str,
+		add_special_tokens=True,
+		truncation=True,
+		max_length=cf["max_sn_len"],
+		padding="max_length",
+		return_attention_mask=True,
+	)
+
+	sn_input_ids = torch.tensor([tokens["input_ids"]], device=device)
+	sn_mask = torch.tensor([tokens["attention_mask"]], dtype=torch.float32, device=device)
+
+	char_lengths = [1.0 if char.strip() else 0.0 for char in sn_str[:cf["max_sn_len"] - 2]]
+	sn_word_len = np.full((cf["max_sn_len"],), np.nan, dtype=np.float32)
+	sn_word_len[1:len(char_lengths) + 1] = char_lengths
+	sn_word_len = torch.tensor(np.expand_dims(sn_word_len, axis=0), device=device)
+	sn_word_len = torch.nan_to_num(sn_word_len)
+
+	return sn_input_ids, sn_mask, sn_word_len
 
 def load_bsc() -> Tuple[pd.DataFrame, ...]:
 	"""
@@ -219,14 +269,16 @@ def load_label(sp_pos, cf, labelencoder, device):
 	label = sp_pos[:, 1:]*mask + sac_amp*~mask
 	label = torch.where(label>cf["max_sn_len"]-1, cf["max_sn_len"]-1, label).to('cpu').detach().numpy()
 	label = labelencoder.transform(label.reshape(-1)).reshape(label.shape[0], label.shape[1])
-	if device == 'cpu':
-		pad_mask = pad_mask.to('cpu').detach().numpy()
-	else:
-		label = torch.from_numpy(label).to(device)
+	label = torch.from_numpy(label).long().to(device)
+	pad_mask = pad_mask.to(device)
 	return pad_mask, label
 
 
 def likelihood(pred, label, mask):
+	if torch.is_tensor(label):
+		label = label.detach().to('cpu').numpy()
+	if torch.is_tensor(mask):
+		mask = mask.detach().to('cpu').numpy()
 	#test
 	#res = F.nll_loss(torch.tensor(pred), torch.tensor(label))
 	label = one_hot_encode(label, pred.shape[1])
