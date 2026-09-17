@@ -39,19 +39,43 @@ def build_bsc_config(
 		"max_pred_len": max_pred_len,
 	}
 
+def build_celer_config(
+	atten_type="local-g",
+	max_pred_len=60,
+	batch_size=256,
+	n_epochs=1000,
+	n_folds=5,
+):
+	return {
+		"model_pretrained": "bert-base-cased",
+		"lr": 1e-3,
+		"max_grad_norm": 10,
+		"n_epochs": n_epochs,
+		"n_folds": n_folds,
+		"dataset": "celer",
+		"atten_type": atten_type,
+		"batch_size": batch_size,
+		"max_sn_len": 24,
+		"max_sn_token": 35,
+		"max_sp_len": 52,
+		"max_sp_token": 395,
+		"norm_type": "z-score",
+		"earlystop_patience": 20,
+		"max_pred_len": max_pred_len,
+	}
+
 def build_label_encoder(cf):
 	le = LabelEncoder()
 	le.fit(np.append(np.arange(-cf["max_sn_len"] + 3, cf["max_sn_len"] - 1), cf["max_sn_len"] - 1))
 	return le
 
+# Raw text to tokenised inputs for both BSC and CELER
 def text_to_bsc_inputs(sn_str, tokenizer, cf, device="cpu"):
 	tokens = tokenizer.encode_plus(
 		sn_str,
 		add_special_tokens=True,
-		truncation=True,
 		max_length=cf["max_sn_len"],
 		padding="max_length",
-		return_attention_mask=True,
 	)
 
 	sn_input_ids = torch.tensor([tokens["input_ids"]], device=device)
@@ -64,6 +88,32 @@ def text_to_bsc_inputs(sn_str, tokenizer, cf, device="cpu"):
 	sn_word_len = torch.nan_to_num(sn_word_len)
 
 	return sn_input_ids, sn_mask, sn_word_len
+
+def text_to_celer_inputs(sn_str, tokenizer, cf, device="cpu"):
+    text = ("[CLS]" + " " + sn_str + " " + "[SEP]").split()
+
+    tokens = tokenizer(
+        text,
+        add_special_tokens=False,
+        max_length=cf["max_sn_token"],
+        padding="max_length",
+        is_split_into_words=True,
+    )
+
+    word_ids_sn = tokens.word_ids()
+    word_ids_sn = [val if val is not None else np.nan for val in word_ids_sn]
+
+    word_lengths = np.asarray([len(t) for t in text[1:-1]], dtype=np.float32)
+    sn_word_len = compute_word_length_celer(word_lengths)
+    sn_word_len = pad_seq_with_nan([sn_word_len], max_len=cf["max_sn_len"], dtype=np.float32)
+
+    sn_input_ids = torch.tensor([tokens["input_ids"]], device=device)
+    sn_mask = torch.tensor([tokens["attention_mask"]], dtype=torch.float32, device=device)
+    word_ids_sn = torch.tensor([word_ids_sn], device=device)
+    sn_word_len = torch.tensor(sn_word_len, device=device)
+    sn_word_len = torch.nan_to_num(sn_word_len)
+
+    return sn_input_ids, sn_mask, word_ids_sn, sn_word_len
 
 def load_bsc() -> Tuple[pd.DataFrame, ...]:
 	"""
