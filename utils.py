@@ -90,11 +90,11 @@ def text_to_bsc_inputs(sn_str, tokenizer, cf, device="cpu"):
 	return sn_input_ids, sn_mask, sn_word_len
 
 def text_to_celer_inputs(sn_str, tokenizer, cf, device="cpu"):
-    text = ("[CLS]" + " " + sn_str + " " + "[SEP]").split()
+    text = sn_str.split()
 
     tokens = tokenizer(
         text,
-        add_special_tokens=False,
+        add_special_tokens=True,
         max_length=cf["max_sn_token"],
         padding="max_length",
         is_split_into_words=True,

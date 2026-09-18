@@ -24,7 +24,9 @@ class EyettentionRawTextInference:
 		self.label_encoder = build_label_encoder(self.cf)
 
 		self.model = Eyettention(self.cf)
-		self.model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+		state_dict = torch.load(checkpoint_path, map_location=device)
+		state_dict.pop("encoder.embeddings.position_ids", None)
+		self.model.load_state_dict(state_dict)
 		self.model.to(device)
 		self.model.eval()
 
