@@ -25,7 +25,8 @@ class EyettentionRawTextInference:
 
 		self.model = Eyettention(self.cf)
 		state_dict = torch.load(checkpoint_path, map_location=device)
-		state_dict.pop("encoder.embeddings.position_ids", None)
+		if "encoder.embeddings.position_ids" not in self.model.state_dict(): # Based on transformers version
+			state_dict.pop("encoder.embeddings.position_ids", None)
 		self.model.load_state_dict(state_dict)
 		self.model.to(device)
 		self.model.eval()
