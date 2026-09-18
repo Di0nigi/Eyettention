@@ -251,7 +251,15 @@ class Eyettention(nn.Module):
 									word_ids_sn,
 									sn_word_len,
 									le,
-									max_pred_len=60):
+									max_pred_len=60,
+									previous_scanpath = None
+									):
+		
+		if previous_scanpath is not None:
+			previous_scanpath = torch.as_tensor(previous_scanpath, dtype=torch.long, device=sn_emd.device)
+			if previous_scanpath.ndim == 1:
+				previous_scanpath = previous_scanpath.unsqueeze(0)
+		
 		#compute the scan path generated from the model when the first CLS taken is given
 		enc_out, sn_mask_word = self.encode(sn_emd, sn_mask, word_ids_sn, sn_word_len)
 		if sn_mask_word is None:

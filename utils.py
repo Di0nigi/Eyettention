@@ -15,6 +15,8 @@ import json
 from collections import Counter
 import torch.nn as nn
 from sklearn.preprocessing import LabelEncoder
+import pickle
+from LAC import LAC
 
 def build_bsc_config(
 	atten_type="local-g",
@@ -71,6 +73,7 @@ def build_label_encoder(cf):
 
 # Raw text to tokenised inputs for both BSC and CELER
 def text_to_bsc_inputs(sn_str, tokenizer, cf, device="cpu"):
+	lac = LAC(mode="seg")
 	tokens = tokenizer.encode_plus(
 		sn_str,
 		add_special_tokens=True,
@@ -81,11 +84,19 @@ def text_to_bsc_inputs(sn_str, tokenizer, cf, device="cpu"):
 	sn_input_ids = torch.tensor([tokens["input_ids"]], device=device)
 	sn_mask = torch.tensor([tokens["attention_mask"]], dtype=torch.float32, device=device)
 
-	char_lengths = [1.0 if char.strip() else 0.0 for char in sn_str[:cf["max_sn_len"] - 2]]
-	sn_word_len = np.full((cf["max_sn_len"],), np.nan, dtype=np.float32)
-	sn_word_len[1:len(char_lengths) + 1] = char_lengths
-	sn_word_len = torch.tensor(np.expand_dims(sn_word_len, axis=0), device=device)
-	sn_word_len = torch.nan_to_num(sn_word_len)
+	sn_word_len = compute_BSC_word_length_for_input(sn_str, lac)
+	sn_word_len = pad_seq_with_nan([sn_word_len], max_len=cf["max_sn_len"], dtype=np.float32)
+
+	# Load precomputed BSC statistics for feature normalization.
+	path = os.path.join(os.path.dirname(__file__), 'Data', 'feature_norm_BSC.pickle')
+	with open(path, "rb") as file_to_read:
+		loaded_dictionary = pickle.load(file_to_read)
+	sn_word_len_mean = loaded_dictionary['sn_word_len_mean'].numpy()
+	sn_word_len_std = loaded_dictionary['sn_word_len_std'].numpy()
+
+	sn_word_len = (sn_word_len - sn_word_len_mean)/sn_word_len_std
+	sn_word_len = np.nan_to_num(sn_word_len)
+	sn_word_len = torch.tensor(sn_word_len, dtype=torch.float32, device=device)
 
 	return sn_input_ids, sn_mask, sn_word_len
 
@@ -93,25 +104,34 @@ def text_to_celer_inputs(sn_str, tokenizer, cf, device="cpu"):
     text = sn_str.split()
 
     tokens = tokenizer(
-        text,
-        add_special_tokens=True,
+        [tokenizer.cls_token, *text, tokenizer.sep_token],
+        add_special_tokens=False,
         max_length=cf["max_sn_token"],
         padding="max_length",
         is_split_into_words=True,
     )
 
+    sn_input_ids = torch.tensor([tokens["input_ids"]], device=device)
+    sn_mask = torch.tensor([tokens["attention_mask"]], dtype=torch.float32, device=device)
+
     word_ids_sn = tokens.word_ids()
     word_ids_sn = [val if val is not None else np.nan for val in word_ids_sn]
+    word_ids_sn = torch.tensor([word_ids_sn], dtype=torch.float32, device=device)
 
-    word_lengths = np.asarray([len(t) for t in text[1:-1]], dtype=np.float32)
+    word_lengths = np.asarray([len(t) for t in text], dtype=np.float32)
     sn_word_len = compute_word_length_celer(word_lengths)
     sn_word_len = pad_seq_with_nan([sn_word_len], max_len=cf["max_sn_len"], dtype=np.float32)
 
-    sn_input_ids = torch.tensor([tokens["input_ids"]], device=device)
-    sn_mask = torch.tensor([tokens["attention_mask"]], dtype=torch.float32, device=device)
-    word_ids_sn = torch.tensor([word_ids_sn], device=device)
-    sn_word_len = torch.tensor(sn_word_len, device=device)
-    sn_word_len = torch.nan_to_num(sn_word_len)
+    # Load precomputed CELER statistics for feature normalization.
+    path = os.path.join(os.path.dirname(__file__), 'Data', 'feature_norm_celer.pickle')
+    with open(path, "rb") as file_to_read:
+        loaded_dictionary = pickle.load(file_to_read)
+    sn_word_len_mean = float(loaded_dictionary['sn_word_len_mean'])
+    sn_word_len_std = float(loaded_dictionary['sn_word_len_std'])
+
+    sn_word_len = (sn_word_len - sn_word_len_mean)/sn_word_len_std
+    sn_word_len = np.nan_to_num(sn_word_len)
+    sn_word_len = torch.tensor(sn_word_len, dtype=torch.float32, device=device)
 
     return sn_input_ids, sn_mask, word_ids_sn, sn_word_len
 
@@ -149,6 +169,19 @@ def compute_BSC_word_length(sn_df):
 	arr[arr==0] = 1/(0+0.5)
 	arr[arr!=0] = 1/(arr[arr!=0])
 	return arr
+
+def compute_BSC_word_length_for_input(sentence, lac):
+    word_string = lac.run(sentence)
+    #print(word_string)
+    word_len = [len(i) for i in word_string]
+    wl_list = []
+    for wl in word_len:
+        wl_list.extend([wl]*wl)
+    arr = np.asarray(wl_list, dtype=np.float32)
+    #length of a punctuation is 0, plus an epsilon to avoid division output inf
+    arr[arr==0] = 1/(0+0.5)
+    arr[arr!=0] = 1/(arr[arr!=0])
+    return arr
 
 def pad_seq(seqs, max_len, pad_value, dtype=np.compat.long):
 	padded = np.full((len(seqs), max_len), fill_value=pad_value, dtype=dtype)
