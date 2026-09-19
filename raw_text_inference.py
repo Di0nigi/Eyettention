@@ -31,7 +31,7 @@ class EyettentionRawTextInference:
 		self.model.to(device)
 		self.model.eval()
 
-	def generate_from_chinese_text(self, text, max_pred_len=None):
+	def generate_from_chinese_text(self, text, max_pred_len=None, previous_scanpath=None):
 		"""Generate from raw Chinese text."""
 		if self.cf["dataset"] != "BSC":
 			raise ValueError("generate_from_chinese_text requires a BSC config.")
@@ -50,9 +50,10 @@ class EyettentionRawTextInference:
 				sn_word_len=sn_word_len,
 				le=self.label_encoder,
 				max_pred_len=max_pred_len or self.cf["max_pred_len"],
+				previous_scanpath=previous_scanpath
 			)
 
-	def generate_from_english_text(self, text, max_pred_len=None):
+	def generate_from_english_text(self, text, max_pred_len=None, previous_scanpath=None):
 		"""Generate from raw English text."""
 		if self.cf["dataset"] != "celer":
 			raise ValueError("generate_from_english_text requires a CELER config.")
@@ -71,4 +72,5 @@ class EyettentionRawTextInference:
 				sn_word_len=sn_word_len,
 				le=self.label_encoder,
 				max_pred_len=max_pred_len or self.cf["max_pred_len"],
+				previous_scanpath=previous_scanpath
 			)

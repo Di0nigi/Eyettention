@@ -259,6 +259,8 @@ class Eyettention(nn.Module):
 			previous_scanpath = torch.as_tensor(previous_scanpath, dtype=torch.long, device=sn_emd.device)
 			if previous_scanpath.ndim == 1:
 				previous_scanpath = previous_scanpath.unsqueeze(0)
+			#if input includes CLS: [0, 1, 2, ...]
+			previous_scanpath = previous_scanpath[:, 1:]
 		
 		#compute the scan path generated from the model when the first CLS taken is given
 		enc_out, sn_mask_word = self.encode(sn_emd, sn_mask, word_ids_sn, sn_word_len)
@@ -328,11 +330,15 @@ class Eyettention(nn.Module):
 			#we do sampling in the paper
 			#pred_indx = result.argmax(dim=1)
 			#sampling next fixation location according to the distribution
-			pred_indx = torch.multinomial(result, 1)
-			pred_class = [le.classes_[pred_indx[i]] for i in torch.arange(result.shape[0])]
-			pred_class = torch.from_numpy(np.array(pred_class)).to(sn_emd.device)
-			#predict fixation word index = last fixation word index + predicted saccade range
-			pred_pos = output[-1] + pred_class
+			if previous_scanpath is not None and p < previous_scanpath.shape[1]:
+				#replay observed fixation
+				pred_pos = previous_scanpath[:, p].clone()
+			else:
+				pred_indx = torch.multinomial(result, 1)
+				pred_class = [le.classes_[pred_indx[i]] for i in torch.arange(result.shape[0])]
+				pred_class = torch.from_numpy(np.array(pred_class)).to(sn_emd.device)
+				#predict fixation word index = last fixation word index + predicted saccade range
+				pred_pos = output[-1] + pred_class
 
 			#larger than sentence max length -- set to sentence length+1, i.e. token <'SEP'>
 			#prepare the input to the next timstep
