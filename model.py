@@ -254,7 +254,7 @@ class Eyettention(nn.Module):
 									max_pred_len=60,
 									previous_scanpath = None
 									):
-		prev_scanpath_len = 0 #predicts max_pred_len fixations after previous scanpaths
+		prev_scanpath_len = 0
 		
 		if previous_scanpath is not None:
 			if len(previous_scanpath) == 0 or previous_scanpath[0] != 0: # prepend with 0 if no 0 at the start of previous scanpaths
