@@ -254,13 +254,20 @@ class Eyettention(nn.Module):
 									max_pred_len=60,
 									previous_scanpath = None
 									):
+		prev_scanpath_len = 0 #predicts max_pred_len fixations after previous scanpaths
 		
 		if previous_scanpath is not None:
+			if len(previous_scanpath) == 0 or previous_scanpath[0] != 0: # prepend with 0 if no 0 at the start of previous scanpaths
+				previous_scanpath = [0] + previous_scanpath
+
+			prev_scanpath_len = len(previous_scanpath)
+
 			previous_scanpath = torch.as_tensor(previous_scanpath, dtype=torch.long, device=sn_emd.device)
 			if previous_scanpath.ndim == 1:
 				previous_scanpath = previous_scanpath.unsqueeze(0)
 			#if input includes CLS: [0, 1, 2, ...]
 			previous_scanpath = previous_scanpath[:, 1:]
+			
 		
 		#compute the scan path generated from the model when the first CLS taken is given
 		enc_out, sn_mask_word = self.encode(sn_emd, sn_mask, word_ids_sn, sn_word_len)
@@ -304,7 +311,7 @@ class Eyettention(nn.Module):
 		pred_counter = 0
 		#output.append(sp_pos[:, pred_counter])
 		output.append(start_pos.long())
-		for p in range(max_pred_len-1):
+		for p in range(prev_scanpath_len + max_pred_len-1):
 			hx, cx = self.decoder_cell1(dec_in, (hx, cx))     # [batch, units]
 			hx2, cx2 = self.decoder_cell2(self.dropout_LSTM(hx), (hx2, cx2))
 			hx3, cx3 = self.decoder_cell3(self.dropout_LSTM(hx2), (hx3, cx3))
