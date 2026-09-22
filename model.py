@@ -254,6 +254,10 @@ class Eyettention(nn.Module):
 									max_pred_len=60,
 									previous_scanpath = None
 									):
+
+		if max_pred_len <= 0:
+			raise ValueError("max_pred_len must be positive.")
+		
 		prev_scanpath_len = 0
 		
 		if previous_scanpath is not None:

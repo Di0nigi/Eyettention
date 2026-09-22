@@ -35,6 +35,13 @@ class EyettentionRawTextInference:
 		"""Generate from raw Chinese text."""
 		if self.cf["dataset"] != "BSC":
 			raise ValueError("generate_from_chinese_text requires a BSC config.")
+		if max_pred_len is not None and max_pred_len <= 0:
+			raise ValueError("max_pred_len must be positive.")
+		if not isinstance(text, str):
+			raise TypeError("text must be a string.")
+		if not text.strip():
+			raise ValueError("text must not be empty.")
+		
 		sn_input_ids, sn_mask, sn_word_len = text_to_bsc_inputs(
 			sn_str=text,
 			tokenizer=self.tokenizer,
@@ -57,6 +64,13 @@ class EyettentionRawTextInference:
 		"""Generate from raw English text."""
 		if self.cf["dataset"] != "celer":
 			raise ValueError("generate_from_english_text requires a CELER config.")
+		if max_pred_len is not None and max_pred_len <= 0:
+			raise ValueError("max_pred_len must be positive.")
+		if not isinstance(text, str):
+			raise TypeError("text must be a string.")
+		if not text.strip():
+			raise ValueError("text must not be empty.")
+		
 		sn_input_ids, sn_mask, word_ids_sn, sn_word_len = text_to_celer_inputs(
 			sn_str=text,
 			tokenizer=self.tokenizer,
