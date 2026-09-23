@@ -117,7 +117,7 @@ class RawTextInferenceSmokeTests(unittest.TestCase):
 		torch.manual_seed(0)
 
 		scanpath, density = runner.generate_from_chinese_text(
-			"中国经济发展很快。",
+			"中国选手在男子滑雪比赛中有望蝉联冠军",
 			max_pred_len=5,
 		)
 
