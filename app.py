@@ -242,8 +242,8 @@ completion).
 """
 
 EXAMPLES = [
-    ["The quick brown fox jumps over the lazy dog.", "celer", 20, False, ""],
-    ["今天天气很好，我们去公园散步吧。", "BSC", 20, False, ""],
+    ["He said BankEast's offer appears to be \"attractive to the bank's shareholders.\"", "celer", 20, False, ""],
+    ["中国选手在男子滑雪比赛中有望蝉联冠军", "BSC", 20, False, ""],
 ]
 
 
