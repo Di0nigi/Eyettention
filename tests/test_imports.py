@@ -3,7 +3,6 @@ import sys
 import unittest
 from pathlib import Path
 
-
 EYETTENTION_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = EYETTENTION_ROOT.parent
 EXCLUDED_DIRS = {"__pycache__", ".git", "tests"}

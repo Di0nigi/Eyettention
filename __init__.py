@@ -14,17 +14,16 @@ from Eyettention.utils import (
     prepare_scanpath,
 )
 
-
 __all__ = [
-    'Eyettention',
-    'Eyettention_readerID',
-    'EyettentionRawTextInference',
-    'BSCdataset',
-    'calculate_mean_std',
-    'celerdataset',
-    'eval_log_llh',
-    'gradient_clipping',
-    'load_corpus',
-    'load_label',
-    'prepare_scanpath'
+    "Eyettention",
+    "Eyettention_readerID",
+    "EyettentionRawTextInference",
+    "BSCdataset",
+    "calculate_mean_std",
+    "celerdataset",
+    "eval_log_llh",
+    "gradient_clipping",
+    "load_corpus",
+    "load_label",
+    "prepare_scanpath",
 ]

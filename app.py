@@ -8,9 +8,7 @@ import torch
 import numpy as np
 
 
-
-
-from Eyettention.raw_text_inference import EyettentionRawTextInference  
+from Eyettention.raw_text_inference import EyettentionRawTextInference
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -51,7 +49,6 @@ def get_model(dataset: str) -> EyettentionRawTextInference:
     return _MODELS[dataset]
 
 
-
 def words_for_text(text: str, dataset: str) -> List[str]:
     """
     Return the list of words that the model's fixation indices refer to.
@@ -62,7 +59,7 @@ def words_for_text(text: str, dataset: str) -> List[str]:
       on whitespace-split words, so we return the whitespace-split words.
     """
     if dataset == "BSC":
-        
+
         return [ch for ch in text if not ch.isspace()]
     else:
         return text.split()
@@ -106,7 +103,7 @@ def decode_scanpath(
         elif 1 <= idx <= n_words:
             word = words[idx - 1]
         else:
-            word = f"<OOR:{idx}>" 
+            word = f"<OOR:{idx}>"
 
         fixations.append(
             {
@@ -136,7 +133,6 @@ def fixations_to_markdown(
     return "\n".join(lines)
 
 
-
 def predict(
     text: str,
     dataset: str,
@@ -157,7 +153,7 @@ def predict(
     if dataset == "celer" and not any(c.isalpha() for c in text):
         raise gr.Error("CELER is the English model — please provide English text.")
     if dataset == "BSC" and not any("\u4e00" <= c <= "\u9fff" for c in text):
-        
+
         pass
 
     if max_pred_len <= 0:
@@ -189,7 +185,6 @@ def predict(
                 max_pred_len=max_pred_len,
                 previous_scanpath=prev,
             )
-
 
     scanpath = scanpath[0]
 
@@ -242,7 +237,13 @@ completion).
 """
 
 EXAMPLES = [
-    ["He said BankEast's offer appears to be \"attractive to the bank's shareholders.\"", "celer", 20, False, ""],
+    [
+        "He said BankEast's offer appears to be \"attractive to the bank's shareholders.\"",
+        "celer",
+        20,
+        False,
+        "",
+    ],
     ["中国选手在男子滑雪比赛中有望蝉联冠军", "BSC", 20, False, ""],
 ]
 
