@@ -171,12 +171,12 @@ class RawTextInferenceSmokeTests(unittest.TestCase):
         from Eyettention.raw_text_inference import EyettentionRawTextInference
 
         bsc_runner = object.__new__(EyettentionRawTextInference)
-        bsc_runner.cf = {"dataset": "celer"}
+        bsc_runner.cf = {"dataset": "BSC"}
         with self.assertRaises(ValueError):
             bsc_runner.generate_from_chinese_text(None)
 
         celer_runner = object.__new__(EyettentionRawTextInference)
-        celer_runner.cf = {"dataset": "BSC"}
+        celer_runner.cf = {"dataset": "celer"}
         with self.assertRaises(ValueError):
             celer_runner.generate_from_english_text(None)
 
@@ -184,12 +184,12 @@ class RawTextInferenceSmokeTests(unittest.TestCase):
         from Eyettention.raw_text_inference import EyettentionRawTextInference
 
         bsc_runner = object.__new__(EyettentionRawTextInference)
-        bsc_runner.cf = {"dataset": "celer"}
+        bsc_runner.cf = {"dataset": "BSC"}
         with self.assertRaises(ValueError):
             bsc_runner.generate_from_chinese_text(" ")
 
         celer_runner = object.__new__(EyettentionRawTextInference)
-        celer_runner.cf = {"dataset": "BSC"}
+        celer_runner.cf = {"dataset": "celer"}
         with self.assertRaises(ValueError):
             celer_runner.generate_from_english_text(" ")
 
